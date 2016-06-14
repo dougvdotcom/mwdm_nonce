@@ -1,4 +1,5 @@
-# mwdm_nonce
+#Nonce-sense
+Using PHP and the mcrypt library to make single-use, time limited tokens that also ensure a web form originated on your site
 
 ##What is this?
 This is code from the Portland Maine Web Developers Meetup group presentation I gave on June 13, 2016, titled "Nonce-sense"
