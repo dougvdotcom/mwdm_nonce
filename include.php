@@ -11,7 +11,7 @@ function my_create_nonce($ttl, $guid) {
 	//create IV
 	$iv = mcrypt_create_iv(MYFORM_IV_SIZE, MCRYPT_RAND);
 	
-	//set max length to form submission
+	//set max length to form submission, in minutes
 	$target = time() + ($ttl * 60);
 	
 	//add GUID
@@ -21,21 +21,22 @@ function my_create_nonce($ttl, $guid) {
 	$ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, MYFORM_KEYPHRASE, $target, MCRYPT_MODE_CBC, $iv);
 	
 	//prepend IV to target so we can decrypt it in a disconnected request
-    $ciphertext = $iv . $ciphertext;
+    	$ciphertext = $iv . $ciphertext;
 	
 	//base64 encode that binary so it can be put on a form
-    return base64_encode($ciphertext);
+    	return base64_encode($ciphertext);
 }
     
 function my_validate_nonce($nonce) {
 	//decode nonce text back to binary
 	$ciphertext = base64_decode($nonce);
 	
-	//nonce has to be at least the length of the IV plus 10 characters for a timestamp and 2 characters, at least, for a pipe and a GUID
+	//nonce has to be at least the length of the IV plus 10 characters for a timestamp;
+	//and 2 characters, at least, for a pipe and a GUID
 	if(strlen($ciphertext) < MYFORM_IV_SIZE + 12) { return false; }
 	//throw new Exception("The nonce is not of the correct minimal size");
 	
-	//whack the IV off that binary 
+	//whack the IV off that returned nonce 
 	$iv = substr($ciphertext, 0, MYFORM_IV_SIZE);
 	
 	//and now get the actual nonce variables
@@ -52,6 +53,10 @@ function my_validate_nonce($nonce) {
 	if(empty($vals)) { return false; }
 	//throw new Exception("Nonce is not in proper format");
 	
+	//nonce should contain two args: timestamp and GUID
+	if(count($vals) != 2) { return false; }
+	//throw new Exception("Nonce contains unexpected variables");
+	
 	//if first argument isn't a timestamp, it's not our nonce
 	if(!preg_match('/^\d{10}$/', $vals[0])) { return false; }
 	//throw new Exception("Nonce is not properly timestamped");
@@ -59,17 +64,14 @@ function my_validate_nonce($nonce) {
 	//if the form hasn't been submitted in the required ttl, it's bad
 	if($vals[0] < time()) { return false; }
 	//throw new Exception("Nonce was not submitted within the required time");
-	
-	//all args should match the required values
-	if(empty($args) && count($vals) != 2) { return false; }
-	//throw new Exception("Nonce contains unexpected variables");
 
 	//nonce passed all checks! return GUID
+	//some other routine will ensure the GUID is valid
 	return $vals[1];
 }
 
 function my_create_guid() {
-	//just getting an integer from a text file
+	//increment guid counter, save same to file, return increment
 	$counter = intval(trim(file_get_contents('guid.txt')));
 	$increment = $counter + 1;
 	file_put_contents('guid.txt', $increment);
@@ -77,7 +79,7 @@ function my_create_guid() {
 }
 
 function my_get_guid() {
-	//just incrementing the 
+	//just getting the current increment from the text file
 	return intval(trim(file_get_contents('guid.txt')));
 }
 ?>
